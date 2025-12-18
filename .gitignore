@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environments
+.venv/
+env/
+ENV/
+
+# Streamlit
+.streamlit/
+
+# OS junk
+.DS_Store
+
+# Logs
+*.log
+
+# Databases
+*.db
+*.sqlite
+
+# Large data files
+*.parquet
+data/
+
+# Backups
+_backups/
+
+# Secrets
+.env
