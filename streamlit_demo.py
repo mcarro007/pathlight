@@ -2774,32 +2774,44 @@ def render_help_page(mode: str) -> None:
 # =============================================================================
 
 def render_main_two_buttons() -> None:
-    st.markdown(
-        f"""
-<div class="pl-card">
-  <div class="pl-title">{APP_BRAND}</div>
-  <div class="pl-subtitle">Choose your environment.</div>
-</div>
-""",
-        unsafe_allow_html=True,
-    )
-    st.write("")
-    c1, c2 = st.columns(2, gap="large")
+    # Landing choice screen: Explorer vs Talent Studio
+    st.markdown("## Choose your Path")
+
+    c1, c2 = st.columns(2)
+
+    def _set_mode(next_mode: str) -> None:
+        st.session_state["mode"] = next_mode
+
+        # Also persist in the URL so Wix (or any external link) can deep-link
+        # directly into the right experience: ?mode=explorer or ?mode=talent
+        try:
+            st.query_params["mode"] = next_mode  # Streamlit >= 1.27
+        except Exception:
+            try:
+                st.experimental_set_query_params(mode=next_mode)  # older Streamlit
+            except Exception:
+                pass
+
+        # Re-run so the router below picks it up immediately.
+        try:
+            st.rerun()
+        except Exception:
+            try:
+                st.experimental_rerun()
+            except Exception:
+                pass
+
     with c1:
-        st.markdown('<div class="pl-primary">', unsafe_allow_html=True)
-        if st.button("Explorer", use_container_width=True):
-            st.session_state["mode"] = MODE_EXPLORER
-            st.session_state["page"] = "explorer.match"
-            st.session_state["lh_gate_done"] = False
-            st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("### Explorer")
+        st.caption("For individuals: analyze roles, explore matches, and run Live Hunt.")
+        if st.button("Become an Explorer", use_container_width=True):
+            _set_mode(MODE_EXPLORER)
+
     with c2:
-        st.markdown('<div class="pl-primary">', unsafe_allow_html=True)
-        if st.button("Talent Studio", use_container_width=True):
-            st.session_state["mode"] = MODE_TALENT
-            st.session_state["page"] = "talent.jd_studio"
-            st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("### Talent Studio")
+        st.caption("For teams: analyze and rewrite job descriptions, and plan comp.")
+        if st.button("Enter Talent Studio", use_container_width=True):
+            _set_mode(MODE_TALENT)
 
 
 def render_login(mode: str) -> None:
@@ -2958,30 +2970,55 @@ def render_talent_shell() -> None:
     else:
         render_jd_studio_page()
 
+def _read_query_param(name: str) -> str | None:
+    """Best-effort query param read across Streamlit versions."""
+    try:
+        v = st.query_params.get(name)
+        # st.query_params can return list-like or scalar depending on version
+        if isinstance(v, (list, tuple)):
+            return v[0] if v else None
+        return v
+    except Exception:
+        try:
+            qp = st.experimental_get_query_params()
+            vals = qp.get(name)
+            return vals[0] if vals else None
+        except Exception:
+            return None
+
 
 def main() -> None:
-    st.set_page_config(page_title="Pathlight", page_icon="✨", layout="wide", initial_sidebar_state="collapsed")
-    inject_css()
+    """
+    App router.
 
-    if "mode" not in st.session_state:
-        st.session_state["mode"] = ""
-    if "page" not in st.session_state:
-        st.session_state["page"] = ""
+    Supports deep links:
+      - https://<app>.streamlit.app/?mode=explorer
+      - https://<app>.streamlit.app/?mode=talent
+    """
+    init_session_state()
 
-    mode = st.session_state.get("mode", "")
-    if not mode:
-        render_main_two_buttons()
-        return
+    # 1) If a URL param is provided, it wins (lets Wix deep-link correctly)
+    mode_param = _read_query_param("mode")
+    if isinstance(mode_param, str):
+        mode_param = mode_param.strip().lower()
+        if mode_param in (MODE_EXPLORER, MODE_TALENT):
+            st.session_state["mode"] = mode_param
+        elif mode_param in ("studio", "talentstudio", "talent_studio"):
+            st.session_state["mode"] = MODE_TALENT
 
-    if not ensure_authed_for_mode(mode):
-        render_login(mode)
-        return
+    # 2) Default to chooser if nothing has been selected yet
+    mode = st.session_state.get("mode") or MODE_CHOOSER
 
     if mode == MODE_EXPLORER:
         render_explorer_shell()
-    else:
-        render_talent_shell()
+        return
 
+    if mode == MODE_TALENT:
+        render_talent_shell()
+        return
+
+    # Fallback: chooser screen
+    render_main_two_buttons()
 
 if __name__ == "__main__":
     main()
