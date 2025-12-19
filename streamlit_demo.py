@@ -3009,54 +3009,34 @@ def _read_query_param(name: str) -> str | None:
         except Exception:
             return None
 
-
-def main() -> None:
-
-    """
-    App router.
-
-    Supports deep links:
-      - https://<app>.streamlit.app/?mode=explorer
-      - https://<app>.streamlit.app/?mode=talent
-    """
+            def main() -> None:
     init_session_state()
 
-    # 1) If a URL param is provided, it wins (lets Wix deep-link correctly)
     mode_param = st.query_params.get("mode")
     if isinstance(mode_param, str):
         mode_param = mode_param.strip().lower()
         if mode_param in (MODE_EXPLORER, MODE_TALENT):
             st.session_state["mode"] = mode_param
-        elif mode_param in ("studio", "talentstudio", "talent_studio"):
-            st.session_state["mode"] = MODE_TALENT
 
-    # 2) URL param wins on every run (so Wix deep-links always work)
     mode = (
         mode_param
-        if isinstance(mode_param, str) and mode_param in (MODE_EXPLORER, MODE_TALENT)
+        if isinstance(mode_param, str)
         else st.session_state.get("mode")
     ) or MODE_CHOOSER
 
-    st.write("DEBUG mode_param =", mode_param)
-    st.write("DEBUG session mode =", st.session_state.get("mode"))
-    st.write("DEBUG final mode =", mode)
-
     if mode == MODE_EXPLORER:
-        st.write("DEBUG: entering MODE_EXPLORER branch")
         render_explorer_shell()
-        st.write("DEBUG: returned from render_explorer_shell()")
         return
 
     if mode == MODE_TALENT:
-        st.write("DEBUG: entering MODE_TALENT branch")
         render_talent_shell()
-        st.write("DEBUG: returned from render_talent_shell()")
         return
 
-    # Fallback: chooser screen
     render_main_two_buttons()
-
 
 
 if __name__ == "__main__":
     main()
+
+
+
