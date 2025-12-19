@@ -192,7 +192,7 @@ class CompBuilderResponse(BaseModel):
 # -------------------------------------------------
 # FastAPI app
 # -------------------------------------------------
-app = FastAPI(title="Job Analyzer API", version="0.7.1")
+app = FastAPI(title="Job Analyzer API", version="0.7.2")
 
 app.add_middleware(
     CORSMiddleware,
@@ -222,6 +222,13 @@ def health():
 def system_openai():
     return openai_status()
 
+@app.get("/system/build")
+def system_build():
+    return {
+        "ok": True,
+        "version": "0.7.2",
+        "commit_hint": "routes-live-check"
+    }
 
 # -------------------------------------------------
 # Register data routes
