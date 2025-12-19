@@ -438,37 +438,10 @@ class APIResult:
     status_code: int
     error: str = ""
 
-
-def api_headers() -> Dict[str, str]:
-    token = st.session_state.get("auth_token", "")
-    h = {"Content-Type": "application/json"}
-    if token:
-        h["Authorization"] = f"Bearer {token}"
-    return h
-
-
-def _safe_err(resp: requests.Response) -> str:
-    try:
-        return json.dumps(resp.json(), ensure_ascii=False)[:1000]
-    except Exception:
-        return (resp.text or "").strip()[:1000]
-
-
 def api_post(path: str, payload: Dict[str, Any], timeout: float = 60.0) -> APIResult:
     url = f"{API_BASE}{path}"
     try:
         r = requests.post(url, headers=api_headers(), json=payload, timeout=timeout)
-        if 200 <= r.status_code < 300:
-            return APIResult(True, r.json() if r.content else {}, r.status_code)
-        return APIResult(False, {}, r.status_code, _safe_err(r))
-    except Exception as e:
-        return APIResult(False, {}, 0, str(e))
-
-
-def api_get(path: str, timeout: float = 30.0) -> APIResult:
-    url = f"{API_BASE}{path}"
-    try:
-        r = requests.get(url, headers=api_headers(), timeout=timeout)
         if 200 <= r.status_code < 300:
             return APIResult(True, r.json() if r.content else {}, r.status_code)
         return APIResult(False, {}, r.status_code, _safe_err(r))
@@ -1252,8 +1225,6 @@ def render_match_explore_page() -> None:
         go = st.button("Search", use_container_width=True, key="mx_go")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    if "mx_results_primary" not in st.session_state:
-        st.session_state["mx_results_primary"] = []
     if "mx_results_adjacent" not in st.session_state:
         st.session_state["mx_results_adjacent"] = []
     if "mx_selected_primary" not in st.session_state:
@@ -1261,33 +1232,58 @@ def render_match_explore_page() -> None:
     if "mx_selected_adjacent" not in st.session_state:
         st.session_state["mx_selected_adjacent"] = 0
 
+    # Resolve once for both Match & Explore and Live Hunt
+    search_path = m.get("consumer_search", "")
+    if not search_path:
+        st.error("Consumer search endpoint not found in backend OpenAPI.")
+        st.stop()
+
     run_search = go or search_by_profile
     if run_search:
-        search_path = m.get("consumer_search", "")
-        if not search_path:
-            st.error("Consumer search endpoint not found in backend OpenAPI.")
-            return
+        # Use query if provided; otherwise, build a reasonable query from profile/context.
+        q_effective = (q or "").strip()
+        if not q_effective and search_by_profile:
+            try:
+                q_effective = build_live_query_from_profile(ctx)
+            except Exception:
+                q_effective = ""
+
+        if not q_effective:
+            st.warning("Enter keywords (or use Search by profile) to run a match search.")
+            st.stop()
+
+        loc_effective = (loc or "").strip() or (profile.get("location") or "").strip()
 
         payload = {
-            "query": q if go else "",
-            "location": loc,
+            "query": q_effective,
+            "location": loc_effective,
             "profile": ctx,
-            "limit": 24,
-            "remote": True,
-            "desired_industries": ctx.get("desired_industries") or [],
+            "limit": 40,
         }
+
         with st.spinner("Searching matches..."):
             res = api_post(search_path, payload, timeout=90)
+
         if not res.ok:
             st.error(f"Search failed: {res.error}")
-            return
+            st.stop()
 
-        # backend may return results/matches OR primary/adjacent, handle both
-        primary = _normalize_results(res.data.get("primary_results") or res.data.get("results") or res.data.get("matches"))
-        adjacent = _normalize_results(res.data.get("adjacent_results") or res.data.get("adjacent"))
+        # Backend may return results/matches OR primary/adjacent, handle both
+        raw_primary = (
+            res.data.get("primary_results")
+            or res.data.get("primary")
+            or res.data.get("results")
+            or res.data.get("matches")
+        )
+        raw_adjacent = res.data.get("adjacent_results") or res.data.get("adjacent") or []
+
+        primary = _normalize_results(raw_primary)
+        adjacent = _normalize_results(raw_adjacent)
 
         # If backend only returns one list, bucket it ourselves
-        if primary and not adjacent and not (res.data.get("primary_results") or res.data.get("adjacent_results")):
+        if primary and not adjacent and not (
+            res.data.get("primary_results") or res.data.get("adjacent_results")
+        ):
             primary, adjacent = _bucket_by_industry(primary, ctx.get("desired_industries") or [])
 
         st.session_state["mx_results_primary"] = primary
@@ -1307,13 +1303,71 @@ def render_match_explore_page() -> None:
             MODE_EXPLORER,
             st.session_state["user_id"],
             "search",
-            f"Search: {(q or 'profile')}",
-            {"query": q, "location": loc, "desired_industries": ctx.get("desired_industries") or [], "counts": {"primary": len(primary), "adjacent": len(adjacent)}},
+            f"Search: {(q_effective or 'profile')}",
+            {
+                "query": q_effective,
+                "location": loc_effective,
+                "desired_industries": ctx.get("desired_industries") or [],
+                "counts": {"primary": len(primary), "adjacent": len(adjacent)},
+            },
         )
 
         # Render industry suggestions (backend if exists, AI fallback if configured)
-        _render_industry_suggestions(ctx, q, loc)
+        _render_industry_suggestions(ctx, q_effective, loc_effective)
 
+    # --- Live Hunt (quick search) ---
+    lh_q = st.text_input("Search roles (e.g. Instructional Designer)", key="live_hunt_query")
+    lh_loc = st.text_input("Location (optional)", key="live_hunt_location")
+
+    if st.button("Run Live Hunt"):
+        live_path = m.get("consumer_live_hunt", "")
+        if not live_path:
+            st.error("Live Hunt endpoint not found in backend OpenAPI.")
+            st.stop()
+
+        if not (lh_q or "").strip():
+            st.warning("Enter a search query to run Live Hunt")
+            st.stop()
+
+        live_payload: Dict[str, Any] = {
+            "query": lh_q.strip(),
+            "location": (lh_loc or "").strip(),
+            "limit": 24,
+        }
+
+        # Optional salary min (from profile) if present and parseable
+        try:
+            sm = str(profile.get("salary_min") or "").strip()
+            if sm:
+                live_payload["salary_min"] = int(re.sub(r"[^0-9]", "", sm) or "0") or None
+        except Exception:
+            pass
+
+        with st.spinner("Running Live Hunt..."):
+            res = api_post(live_path, live_payload, timeout=90)
+
+        if not res.ok:
+            st.error(f"Live Hunt failed: {res.error}")
+            st.stop()
+
+        # Persist for the dedicated Live Hunt page, too
+        st.session_state["lh_results"] = (
+            res.data.get("results")
+            or res.data.get("jobs")
+            or res.data.get("matches")
+            or []
+        )
+        st.session_state["lh_last_query"] = lh_q.strip()
+        st.session_state["lh_last_location"] = (lh_loc or "").strip()
+
+        # If your renderer expects the raw backend shape, fall back
+        try:
+            if "render_live_hunt_results" in globals():
+                render_live_hunt_results(res.data)
+            else:
+                st.success("Live Hunt ran successfully. Open the Live Hunt page to review results.")
+        except Exception as e:
+            st.error(f"Live Hunt ran, but the renderer errored: {e}")
     primary = st.session_state.get("mx_results_primary") or []
     adjacent = st.session_state.get("mx_results_adjacent") or []
 
@@ -1420,7 +1474,7 @@ def render_jd_pulse_page() -> None:
             st.error(f"JD Pulse failed: {res.error}")
             return
 
-        report = res.data.get("report") or res.data
+        report = res.data.get("report") or res.data.get("pulse") or res.data
 
         # Try to support multiple backend shapes, but ALWAYS render a text-heavy output
         parts: List[str] = []
@@ -3075,7 +3129,7 @@ def main() -> None:
         else ""
     )
 
-    # ---- No mode yet Ã¢â€ â€™ landing chooser
+    # ---- No mode yet abc123 landing chooser
     if not mode:
         render_main_two_buttons()
         return
