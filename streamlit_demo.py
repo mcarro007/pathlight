@@ -3041,13 +3041,13 @@ def main() -> None:
     st.write("DEBUG final mode =", mode)
 
 
-    if mode == MODE_EXPLORER:
+if mode == MODE_EXPLORER:
     st.write("DEBUG: entering MODE_EXPLORER branch")
     render_explorer_shell()
     st.write("DEBUG: returned from render_explorer_shell()")
     return
 
-    if mode == MODE_TALENT:
+if mode == MODE_TALENT:
     st.write("DEBUG: entering MODE_TALENT branch")
     render_talent_shell()
     st.write("DEBUG: returned from render_talent_shell()")
