@@ -3019,9 +3019,8 @@ def _read_query_param(name: str) -> str | None:
         except Exception:
             return None
 
-            def main() -> None:
+def main() -> None:
     init_session_state()
-
     mode_param = st.query_params.get("mode")
     if isinstance(mode_param, str):
         mode_param = mode_param.strip().lower()
