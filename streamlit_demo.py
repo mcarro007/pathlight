@@ -14,6 +14,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import requests
 import streamlit as st
 
+
+
 # DEBUG DISABLED: st.write("DEBUG: raw query_params =", dict(st.query_params))
 try:
     pass
@@ -76,6 +78,16 @@ import streamlit as st  # only if not already imported above
 
 # DEBUG DISABLED: st.write("DEBUG ROOT_DIR =", str(ROOT_DIR))
 # DEBUG DISABLED: st.write("DEBUG API_BASE =", API_BASE)
+# ---------------- API headers helper ----------------
+def api_headers() -> dict:
+    token = st.session_state.get("auth_token")
+    if not token:
+        return {"Content-Type": "application/json"}
+    return {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+
 
 try:
     r = requests.get(f"{API_BASE}/system/build", timeout=10)
