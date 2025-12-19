@@ -41,6 +41,15 @@ try:
 except Exception:
     PdfReader = None
 
+MODE_CHOOSER  = "chooser"
+MODE_EXPLORER = "explorer"
+MODE_TALENT   = "talent"
+
+def init_session_state() -> None:
+    if "mode" not in st.session_state:
+        st.session_state["mode"] = MODE_CHOOSER
+
+
 # ================================
 # URL deep-link support (?mode=explorer | ?mode=talent)
 # ================================
@@ -3012,7 +3021,7 @@ def main() -> None:
     init_session_state()
 
     # 1) If a URL param is provided, it wins (lets Wix deep-link correctly)
-    mode_param = _read_query_param("mode")
+    mode_param = st.query_params.get("mode")
     if isinstance(mode_param, str):
         mode_param = mode_param.strip().lower()
         if mode_param in (MODE_EXPLORER, MODE_TALENT):
@@ -3032,14 +3041,18 @@ def main() -> None:
     st.write("DEBUG final mode =", mode)
 
 
-
     if mode == MODE_EXPLORER:
-        render_explorer_shell()
-        return
+    st.write("DEBUG: entering MODE_EXPLORER branch")
+    render_explorer_shell()
+    st.write("DEBUG: returned from render_explorer_shell()")
+    return
 
     if mode == MODE_TALENT:
-        render_talent_shell()
-        return
+    st.write("DEBUG: entering MODE_TALENT branch")
+    render_talent_shell()
+    st.write("DEBUG: returned from render_talent_shell()")
+    return
+
 
     # Fallback: chooser screen
     render_main_two_buttons()
