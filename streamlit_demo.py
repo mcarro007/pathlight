@@ -14,6 +14,12 @@ from typing import Any, Dict, List, Optional, Tuple
 import requests
 import streamlit as st
 
+st.write("DEBUG: raw query_params =", dict(st.query_params))
+try:
+    st.write("DEBUG: mode =", st.query_params.get("mode"))
+except Exception as e:
+    st.write("DEBUG: query param read error:", e)
+
 import pandas as pd
 import numpy as np
 
