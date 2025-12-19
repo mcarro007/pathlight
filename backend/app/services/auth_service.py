@@ -6,10 +6,15 @@ from typing import Optional, Tuple
 
 from fastapi import HTTPException, status
 from passlib.context import CryptContext
+from passlib.exc import UnknownHashError
 
 from backend.app.services.sqlite_db import get_conn
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Use bcrypt_sha256 to avoid bcrypt's 72-byte input limit safely
+pwd_context = CryptContext(
+    schemes=["bcrypt_sha256"],
+    deprecated="auto",
+)
 
 
 def _now_iso() -> str:
@@ -19,13 +24,19 @@ def _now_iso() -> str:
 def _expires_iso(hours: int = 24) -> str:
     return (datetime.utcnow() + timedelta(hours=hours)).isoformat()
 
-
+    
 def _hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
-
+    
+     
 def _verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    try:
+        return pwd_context.verify(plain, hashed)
+    except (UnknownHashError, ValueError, TypeError):
+        # UnknownHashError = the stored value isn't a passlib-recognized hash
+        # ValueError/TypeError = None/empty/invalid formats
+        return False
 
 
 def register_user(email: str, password: str) -> int:
