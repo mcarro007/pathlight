@@ -14,11 +14,11 @@ from typing import Any, Dict, List, Optional, Tuple
 import requests
 import streamlit as st
 
-st.write("DEBUG: raw query_params =", dict(st.query_params))
+if os.getenv("PATHLIGHT_DEBUG","")=="1": st.write("DEBUG: raw query_params =", dict(st.query_params))
 try:
-    st.write("DEBUG: mode =", st.query_params.get("mode"))
+    if os.getenv("PATHLIGHT_DEBUG","")=="1": st.write("DEBUG: mode =", st.query_params.get("mode"))
 except Exception as e:
-    st.write("DEBUG: query param read error:", e)
+    if os.getenv("PATHLIGHT_DEBUG","")=="1": st.write("DEBUG: query param read error:", e)
 
 import pandas as pd
 import numpy as np
@@ -75,8 +75,8 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 SERPAPI_API_KEY = os.getenv("SERPAPI_API_KEY", "")
 
 APP_BRAND = "Pathlight"
-MODE_EXPLORER = "Explorer"
-MODE_TALENT = "Talent Studio"
+MODE_EXPLORER_LABEL = "Explorer"
+MODE_TALENT_LABEL = "Talent Studio"
 
 DEMO_DB_PATH = Path(
     os.getenv(
@@ -2841,7 +2841,7 @@ def render_login(mode: str) -> None:
     st.markdown(
         f"""
 <div class="pl-card">
-  <div class="pl-title">{APP_BRAND} {mode}</div>
+  <div class="pl-title">{APP_BRAND} {(MODE_EXPLORER_LABEL if mode==MODE_EXPLORER else MODE_TALENT_LABEL)}</div>
   <div class="pl-subtitle">{'Built for you, not for selling you.' if mode==MODE_EXPLORER else 'Built for hiring teams with serious control.'}</div>
 </div>
 """,
