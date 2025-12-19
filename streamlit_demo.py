@@ -98,31 +98,53 @@ def api_url(path: str) -> str:
     return base + p
 
 
-def api_get(path: str, timeout: int = 30):
+class ApiResponse:
+    def __init__(self, ok: bool, data=None, status: int | None = None, text: str | None = None):
+        self.ok = ok
+        self.data = data
+        self.status = status
+        self.text = text
+
+
+def api_get(path: str, timeout: int = 30) -> ApiResponse:
     url = api_url(path)
     r = requests.get(url, headers=api_headers(), timeout=timeout)
+
     try:
         r.raise_for_status()
+        try:
+            data = r.json()
+        except Exception:
+            data = None
+        return ApiResponse(ok=True, data=data, status=r.status_code)
     except Exception:
-        # Return structured error for UI/logging
-        return {"ok": False, "status": r.status_code, "text": r.text}
-    try:
-        return r.json()
-    except Exception:
-        return {"ok": False, "status": r.status_code, "text": r.text}
+        return ApiResponse(
+            ok=False,
+            data=None,
+            status=r.status_code,
+            text=r.text,
+        )
 
 
-def api_post(path: str, payload: dict | None = None, timeout: int = 60):
+def api_post(path: str, payload: dict | None = None, timeout: int = 60) -> ApiResponse:
     url = api_url(path)
     r = requests.post(url, headers=api_headers(), json=(payload or {}), timeout=timeout)
+
     try:
         r.raise_for_status()
+        try:
+            data = r.json()
+        except Exception:
+            data = None
+        return ApiResponse(ok=True, data=data, status=r.status_code)
     except Exception:
-        return {"ok": False, "status": r.status_code, "text": r.text}
-    try:
-        return r.json()
-    except Exception:
-        return {"ok": False, "status": r.status_code, "text": r.text}
+        return ApiResponse(
+            ok=False,
+            data=None,
+            status=r.status_code,
+            text=r.text,
+        )
+
 
 try:
     r = requests.get(f"{API_BASE}/system/build", timeout=10)
