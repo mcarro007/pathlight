@@ -1496,7 +1496,7 @@ def render_jd_pulse_page() -> None:
         with st.spinner("Running JD Pulse..."):
             res = api_post(path, {"jd_text": jd, "profile": profile}, timeout=90)
         if not res.ok:
-            st.error(f"JD Pulse failed: {res.error}")
+            st.error(f"JD Pulse failed: {res.text or res.status}")
             return
 
         report = res.data.get("report") or res.data.get("pulse") or res.data
