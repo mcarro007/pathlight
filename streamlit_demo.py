@@ -46,7 +46,6 @@ try:
 except Exception:
     PdfReader = None
 
-
 # =============================================================================
 # Pathlight Ã¢â‚¬â€œ Streamlit Demo (Premium, Indeed-like, Hard-Separated) [patch11]
 # =============================================================================
@@ -63,22 +62,11 @@ APP_BRAND = "Pathlight"
 MODE_EXPLORER = "Explorer"
 MODE_TALENT = "Talent Studio"
 
-DEMO_DB_PATH = Path(
-    os.getenv(
-        "PATHLIGHT_DEMO_DB_PATH",
-        str(Path(__file__).resolve().parent / "data" / "pathlight_demo.db"),
-    )
-)
 
-ROOT_DIR = Path(__file__).resolve().parent
+# ==============================
+# API helpers (MUST BE TOP-LEVEL)
+# ==============================
 
-# ---------------- DEBUG (temporary) ----------------
-import requests
-import streamlit as st  # only if not already imported above
-
-# DEBUG DISABLED: st.write("DEBUG ROOT_DIR =", str(ROOT_DIR))
-# DEBUG DISABLED: st.write("DEBUG API_BASE =", API_BASE)
-# ---------------- API headers helper ----------------
 def api_headers() -> dict:
     token = st.session_state.get("auth_token")
     if not token:
@@ -90,7 +78,6 @@ def api_headers() -> dict:
 
 
 def api_url(path: str) -> str:
-    # Ensure exactly one slash between base and path
     base = (API_BASE or "").rstrip("/")
     p = (path or "").strip()
     if not p.startswith("/"):
@@ -107,44 +94,35 @@ class ApiResponse:
 
 
 def api_get(path: str, timeout: int = 30) -> ApiResponse:
-    url = api_url(path)
-    r = requests.get(url, headers=api_headers(), timeout=timeout)
-
+    r = requests.get(api_url(path), headers=api_headers(), timeout=timeout)
     try:
         r.raise_for_status()
-        try:
-            data = r.json()
-        except Exception:
-            data = None
-        return ApiResponse(ok=True, data=data, status=r.status_code)
+        return ApiResponse(True, r.json() if r.content else None, r.status_code)
     except Exception:
-        return ApiResponse(
-            ok=False,
-            data=None,
-            status=r.status_code,
-            text=r.text,
-        )
+        return ApiResponse(False, None, r.status_code, r.text)
 
 
 def api_post(path: str, payload: dict | None = None, timeout: int = 60) -> ApiResponse:
-    url = api_url(path)
-    r = requests.post(url, headers=api_headers(), json=(payload or {}), timeout=timeout)
-
+    r = requests.post(api_url(path), headers=api_headers(), json=(payload or {}), timeout=timeout)
     try:
         r.raise_for_status()
-        try:
-            data = r.json()
-        except Exception:
-            data = None
-        return ApiResponse(ok=True, data=data, status=r.status_code)
+        return ApiResponse(True, r.json() if r.content else None, r.status_code)
     except Exception:
-        return ApiResponse(
-            ok=False,
-            data=None,
-            status=r.status_code,
-            text=r.text,
-        )
+        return ApiResponse(False, None, r.status_code, r.text)
 
+
+# =============================================================================
+DEMO_DB_PATH = Path(
+    os.getenv(
+        "PATHLIGHT_DEMO_DB_PATH",
+        str(Path(__file__).resolve().parent / "data" / "pathlight_demo.db"),
+    )
+)
+
+ROOT_DIR = Path(__file__).resolve().parent
+
+
+# ---------------- DEBUG /system/build call ----------------
 
 try:
     r = requests.get(f"{API_BASE}/system/build", timeout=10)
@@ -494,28 +472,6 @@ def demo_delete_upload(upload_id: int) -> None:
     conn = demo_db()
     conn.execute("DELETE FROM uploads WHERE id=?", (upload_id,))
     conn.commit()
-
-
-# =============================================================================
-# Backend API client
-# =============================================================================
-
-@dataclass
-class APIResult:
-    ok: bool
-    data: Dict[str, Any]
-    status_code: int
-    error: str = ""
-
-def api_post(path: str, payload: Dict[str, Any], timeout: float = 60.0) -> APIResult:
-    url = f"{API_BASE}{path}"
-    try:
-        r = requests.post(url, headers=api_headers(), json=payload, timeout=timeout)
-        if 200 <= r.status_code < 300:
-            return APIResult(True, r.json() if r.content else {}, r.status_code)
-        return APIResult(False, {}, r.status_code, _safe_err(r))
-    except Exception as e:
-        return APIResult(False, {}, 0, str(e))
 
 
 # =============================================================================
