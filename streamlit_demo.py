@@ -89,6 +89,41 @@ def api_headers() -> dict:
     }
 
 
+def api_url(path: str) -> str:
+    # Ensure exactly one slash between base and path
+    base = (API_BASE or "").rstrip("/")
+    p = (path or "").strip()
+    if not p.startswith("/"):
+        p = "/" + p
+    return base + p
+
+
+def api_get(path: str, timeout: int = 30):
+    url = api_url(path)
+    r = requests.get(url, headers=api_headers(), timeout=timeout)
+    try:
+        r.raise_for_status()
+    except Exception:
+        # Return structured error for UI/logging
+        return {"ok": False, "status": r.status_code, "text": r.text}
+    try:
+        return r.json()
+    except Exception:
+        return {"ok": False, "status": r.status_code, "text": r.text}
+
+
+def api_post(path: str, payload: dict | None = None, timeout: int = 60):
+    url = api_url(path)
+    r = requests.post(url, headers=api_headers(), json=(payload or {}), timeout=timeout)
+    try:
+        r.raise_for_status()
+    except Exception:
+        return {"ok": False, "status": r.status_code, "text": r.text}
+    try:
+        return r.json()
+    except Exception:
+        return {"ok": False, "status": r.status_code, "text": r.text}
+
 try:
     r = requests.get(f"{API_BASE}/system/build", timeout=10)
     # DEBUG DISABLED: st.write("DEBUG /system/build status =", r.status_code)
