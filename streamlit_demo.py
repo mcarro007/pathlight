@@ -3011,6 +3011,7 @@ def _read_query_param(name: str) -> str | None:
 
 
 def main() -> None:
+
     """
     App router.
 
@@ -3040,7 +3041,6 @@ def main() -> None:
     st.write("DEBUG session mode =", st.session_state.get("mode"))
     st.write("DEBUG final mode =", mode)
 
-
     if mode == MODE_EXPLORER:
         st.write("DEBUG: entering MODE_EXPLORER branch")
         render_explorer_shell()
@@ -3055,6 +3055,7 @@ def main() -> None:
 
     # Fallback: chooser screen
     render_main_two_buttons()
+
 
 
 if __name__ == "__main__":
