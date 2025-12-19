@@ -14,11 +14,11 @@ from typing import Any, Dict, List, Optional, Tuple
 import requests
 import streamlit as st
 
-st.write("DEBUG: raw query_params =", dict(st.query_params))
+# DEBUG DISABLED: st.write("DEBUG: raw query_params =", dict(st.query_params))
 try:
-    st.write("DEBUG: mode =", st.query_params.get("mode"))
+# DEBUG DISABLED:     st.write("DEBUG: mode =", st.query_params.get("mode"))
 except Exception as e:
-    st.write("DEBUG: query param read error:", e)
+# DEBUG DISABLED:     st.write("DEBUG: query param read error:", e)
 
 import pandas as pd
 import numpy as np
@@ -43,10 +43,13 @@ except Exception:
 
 
 # =============================================================================
-# Pathlight – Streamlit Demo (Premium, Indeed-like, Hard-Separated) [patch11]
+# Pathlight Ã¢â‚¬â€œ Streamlit Demo (Premium, Indeed-like, Hard-Separated) [patch11]
 # =============================================================================
+API_BASE = os.getenv(
+    "JOB_ANALYZER_API_BASE_URL",
+    "https://qjpajy5qrz.us-east-1.awsapprunner.com",
+).rstrip("/")
 
-API_BASE = os.getenv("JOB_ANALYZER_API_BASE_URL", "http://127.0.0.1:8011").rstrip("/")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 SERPAPI_API_KEY = os.getenv("SERPAPI_API_KEY", "")
@@ -62,10 +65,24 @@ DEMO_DB_PATH = Path(
     )
 )
 
-
-
-# Local parquet paths (repo-root relative to this file)
 ROOT_DIR = Path(__file__).resolve().parent
+
+# ---------------- DEBUG (temporary) ----------------
+import requests
+import streamlit as st  # only if not already imported above
+
+# DEBUG DISABLED: st.write("DEBUG ROOT_DIR =", str(ROOT_DIR))
+# DEBUG DISABLED: st.write("DEBUG API_BASE =", API_BASE)
+
+try:
+    r = requests.get(f"{API_BASE}/system/build", timeout=10)
+# DEBUG DISABLED:     st.write("DEBUG /system/build status =", r.status_code)
+# DEBUG DISABLED:     st.write("DEBUG /system/build json =", r.json())
+except Exception as e:
+# DEBUG DISABLED:     st.write("DEBUG /system/build ERROR =", repr(e))
+# --------------------------------------------------
+
+
 PARQUETS: Dict[str, str] = {
     "merged_model_ready_sample_100k": str(ROOT_DIR / "merged_model_ready_sample_100k.parquet"),
     "gold_salary_100k": str(ROOT_DIR / "gold_salary_100k.parquet"),
@@ -238,7 +255,7 @@ div.stButton > button {{
   line-height: 1.45;
 }}
 
-/* Complementary “AWS console-ish” hues */
+/* Complementary Ã¢â‚¬Å“AWS console-ishÃ¢â‚¬Â hues */
 .pl-callout.teal {{
   background: rgba(14, 165, 233, 0.06);
 }}
@@ -726,7 +743,7 @@ def card(title: str, subtitle: str = "") -> None:
 
 def bullets(items: List[str]) -> None:
     for s in [x for x in items if (x or "").strip()]:
-        st.write(f"• {s}")
+        st.write(f"Ã¢â‚¬Â¢ {s}")
 
 
 def render_job_detail(sel: Dict[str, Any]) -> None:
@@ -739,7 +756,7 @@ def render_job_detail(sel: Dict[str, Any]) -> None:
 
     st.markdown('<div class="pl-card">', unsafe_allow_html=True)
     st.markdown(f"<div class='pl-title'>{title}</div>", unsafe_allow_html=True)
-    meta = " • ".join([x for x in [company, location, industry] if x])
+    meta = " Ã¢â‚¬Â¢ ".join([x for x in [company, location, industry] if x])
     if meta:
         st.markdown(f"<div class='pl-subtitle'>{meta}</div>", unsafe_allow_html=True)
     if salary:
@@ -1003,7 +1020,7 @@ def _render_result_list(results: List[Dict[str, Any]], lane_key: str, selected_k
 
         st.markdown("<div class='pl-card'>", unsafe_allow_html=True)
         st.markdown(f"<div style='font-weight:900; color:{INK}; font-size:14px;'>{title}</div>", unsafe_allow_html=True)
-        meta = " • ".join([x for x in [company, location, industry] if x])
+        meta = " Ã¢â‚¬Â¢ ".join([x for x in [company, location, industry] if x])
         if meta:
             st.markdown(f"<div class='pl-muted'>{meta}</div>", unsafe_allow_html=True)
 
@@ -1121,16 +1138,16 @@ def _render_career_paths_suggestions(ctx: Dict[str, Any], query: str) -> None:
                 user=(
                     f"Write HIGHLY DETAILED career-path guidance for {who}.\n\n"
                     "Requirements:\n"
-                    "• Suggest 6–8 career paths the person may not have considered, including adjacent roles and specialized niches.\n"
-                    "• For EACH path: write 3–4 paragraphs (not bullets-only).\n"
-                    "• Each path must include:\n"
+                    "Ã¢â‚¬Â¢ Suggest 6Ã¢â‚¬â€œ8 career paths the person may not have considered, including adjacent roles and specialized niches.\n"
+                    "Ã¢â‚¬Â¢ For EACH path: write 3Ã¢â‚¬â€œ4 paragraphs (not bullets-only).\n"
+                    "Ã¢â‚¬Â¢ Each path must include:\n"
                     "  - Why it's a fit (based on their skills/experience)\n"
                     "  - Typical titles and where these roles live (teams/industries)\n"
                     "  - What to learn next (specific skill categories, cert types, portfolio artifacts)\n"
                     "  - A step-by-step plan for the next 30/60/90 days\n"
                     "  - A \"bridge\" option: a role they can realistically get sooner that leads into the target path\n\n"
                     "Also: include a short section up front called 'Industry expansions' that lists 4 industries "
-                    "they could pivot into and WHY (2–3 paragraphs per industry).\n\n"
+                    "they could pivot into and WHY (2Ã¢â‚¬â€œ3 paragraphs per industry).\n\n"
                     f"Search intent / role keywords: {query}\n\n"
                     f"Profile name: {ctx.get('name','')}\n"
                     f"Location: {ctx.get('location','')}\n"
@@ -1179,7 +1196,7 @@ def _render_career_paths_suggestions(ctx: Dict[str, Any], query: str) -> None:
     system="You are a career coach. Return readable sections with headings. No JSON.",
     user=(
         "You already suggested career paths. Now build a detailed career roadmap for EACH suggested path. "
-        "For each path, write 3–4 paragraphs and then a step-by-step plan with milestones (30 days, 90 days, 6 months, 12 months). "
+        "For each path, write 3Ã¢â‚¬â€œ4 paragraphs and then a step-by-step plan with milestones (30 days, 90 days, 6 months, 12 months). "
         "Include: skills to build, certifications/education options, portfolio projects, networking moves, and how to translate current experience. "
         "Also include 3 example job titles to target next and 3 keywords to search on job boards. "
         "Be specific and practical. Do NOT return JSON.\n\n"
@@ -1444,15 +1461,15 @@ def render_jd_pulse_page() -> None:
             lines = ["## Red flags and risk signals"]
             for r in risks[:14]:
                 if isinstance(r, str) and r.strip():
-                    lines.append(f"• {r.strip()}")
+                    lines.append(f"Ã¢â‚¬Â¢ {r.strip()}")
             parts.append("\n".join(lines).strip())
 
         # Negotiation + offer prep
         parts.append(
             "## Negotiation prep (if you get an offer)\n"
-            "• What to negotiate: base pay, signing, equity/bonus, leveling, remote flexibility, start date, title, learning budget, PTO\n"
-            "• How to anchor: tie your anchor to outcomes you can deliver in 90 days\n"
-            "• What to ask for in writing: job level, reporting line, bonus plan details, benefits, remote policy"
+            "Ã¢â‚¬Â¢ What to negotiate: base pay, signing, equity/bonus, leveling, remote flexibility, start date, title, learning budget, PTO\n"
+            "Ã¢â‚¬Â¢ How to anchor: tie your anchor to outcomes you can deliver in 90 days\n"
+            "Ã¢â‚¬Â¢ What to ask for in writing: job level, reporting line, bonus plan details, benefits, remote policy"
         )
 
         if tactics:
@@ -1463,7 +1480,7 @@ def render_jd_pulse_page() -> None:
             lines = ["## Questions to ask in the first interview"]
             for q in questions[:12]:
                 if isinstance(q, str) and q.strip():
-                    lines.append(f"• {q.strip()}")
+                    lines.append(f"Ã¢â‚¬Â¢ {q.strip()}")
             parts.append("\n".join(lines).strip())
 
         # If backend returned a single text field, prefer it (but still keep our structure)
@@ -1841,7 +1858,7 @@ def render_live_hunt_page() -> None:
 
             st.markdown("<div class='pl-card'>", unsafe_allow_html=True)
             st.markdown(f"<div class='pl-h2'>{_html_escape(title)}</div>", unsafe_allow_html=True)
-            meta = " • ".join([x for x in [company, location] if x])
+            meta = " Ã¢â‚¬Â¢ ".join([x for x in [company, location] if x])
             if meta:
                 st.markdown(f"<div class='pl-muted'>{_html_escape(meta)}</div>", unsafe_allow_html=True)
 
@@ -1858,7 +1875,7 @@ def render_live_hunt_page() -> None:
                         MODE_EXPLORER,
                         st.session_state.get("user_id", "demo"),
                         "live_job",
-                        f"{title} — {company}".strip(" —"),
+                        f"{title} Ã¢â‚¬â€ {company}".strip(" Ã¢â‚¬â€"),
                         {"title": title, "company": company, "location": location, "url": url, "snippet": snippet},
                     )
                     st.success("Saved. Your results will stay on screen.")
@@ -1937,7 +1954,7 @@ def render_live_hunt_page() -> None:
             manual_skills = st.text_area("Skills (comma-separated)", key="lh_m_skills", height=80, placeholder="e.g., Epic, patient care, curriculum design, stakeholder management")
             manual_interests = st.text_area("Interests", key="lh_m_interests", height=60, placeholder="e.g., leadership, education, healthcare AI")
         with ms2:
-            manual_experience = st.text_area("Experience summary", key="lh_m_exp", height=90, placeholder="1–3 sentences helps a lot.")
+            manual_experience = st.text_area("Experience summary", key="lh_m_exp", height=90, placeholder="1Ã¢â‚¬â€œ3 sentences helps a lot.")
             manual_education = st.text_area("Education / certs", key="lh_m_edu", height=60, placeholder="e.g., DNP, RN, PMP")
             manual_industries = st.text_input("Industries (comma-separated, optional)", key="lh_m_inds", placeholder="e.g., Healthcare, Education, Technology")
 
@@ -2136,7 +2153,7 @@ def render_files_page(mode: str) -> None:
         st.markdown("<div class='pl-h2'>Your uploads</div>", unsafe_allow_html=True)
         for row in uploads[:30]:
             st.markdown(f"<div style='font-weight:900'>{row['filename']}</div>", unsafe_allow_html=True)
-            st.markdown(f"<div class='pl-muted'>{row['mimetype']} • {row['size_bytes']} bytes • {row['created_at']}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='pl-muted'>{row['mimetype']} Ã¢â‚¬Â¢ {row['size_bytes']} bytes Ã¢â‚¬Â¢ {row['created_at']}</div>", unsafe_allow_html=True)
 
             c1, c2 = st.columns([0.6, 0.4], gap="small")
             with c1:
@@ -2158,7 +2175,7 @@ def render_files_page(mode: str) -> None:
     else:
         for row in items[:40]:
             st.markdown(f"<div style='font-weight:900'>{row['title']}</div>", unsafe_allow_html=True)
-            st.markdown(f"<div class='pl-muted'>{row['kind']} • {row['created_at']}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='pl-muted'>{row['kind']} Ã¢â‚¬Â¢ {row['created_at']}</div>", unsafe_allow_html=True)
             if st.button("Delete", use_container_width=True, key=f"del_art_{mode}_{row['id']}"):
                 demo_delete_artifact(int(row["id"]))
                 st.rerun()
@@ -2272,9 +2289,9 @@ def render_talent_company_profile_page() -> None:
                     system="You extract structured company profile information from messy text. Return readable sections (not JSON).",
                     user=f"""From the portfolio text below, extract:
 
-1) A crisp About section (3–5 sentences)
-2) Company values (5–8 bullets)
-3) Company successes (5–8 bullets)
+1) A crisp About section (3Ã¢â‚¬â€œ5 sentences)
+2) Company values (5Ã¢â‚¬â€œ8 bullets)
+3) Company successes (5Ã¢â‚¬â€œ8 bullets)
 4) Benefits/perks (bulleted list)
 5) Brand voice guidance for job descriptions (tone + style)
 
@@ -2308,7 +2325,7 @@ PORTFOLIO TEXT:
     updated["company_name"] = st.text_input("Company name", value=updated.get("company_name") or "")
     updated["hq_location"] = st.text_input("HQ location", value=updated.get("hq_location") or "")
     updated["industry"] = st.text_input("Industry", value=updated.get("industry") or "")
-    updated["company_size"] = st.text_input("Company size (e.g., 51–200, 1000+)", value=updated.get("company_size") or "")
+    updated["company_size"] = st.text_input("Company size (e.g., 51Ã¢â‚¬â€œ200, 1000+)", value=updated.get("company_size") or "")
     updated["work_model"] = st.selectbox("Work model", ["", "Remote", "Hybrid", "On-site"], index=0, key="cp_work_model")
     updated["about"] = st.text_area("About the company", value=updated.get("about") or "", height=90)
     updated["values"] = st.text_area("Values / culture", value=updated.get("values") or "", height=80)
@@ -2670,7 +2687,7 @@ def explorer_topbar() -> None:
         st.text_input(
             "Search",
             key="pl_global_search",
-            placeholder="Search (coming soon)…",
+            placeholder="Search (coming soon)Ã¢â‚¬Â¦",
             label_visibility="collapsed",
         )
         st.write("")
@@ -2793,10 +2810,10 @@ def render_main_two_buttons() -> None:
             st.session_state["lh_gate_done"] = False
             # Persist mode in the URL so external links (Wix) and refreshes stay in the same experience
             try:
-                st.query_params["mode"] = MODE_EXPLORER  # Streamlit >= 1.27
+                st.query_params["mode"] = "explorer"  # Streamlit >= 1.27
             except Exception:
                 try:
-                    st.experimental_set_query_params(mode=MODE_EXPLORER)  # older Streamlit
+                    st.experimental_set_query_params(mode="explorer")  # older Streamlit
                 except Exception:
                     pass
             st.rerun()
@@ -2808,10 +2825,10 @@ def render_main_two_buttons() -> None:
             st.session_state["page"] = "talent.jd_studio"
             # Persist mode in the URL so external links (Wix) and refreshes stay in the same experience
             try:
-                st.query_params["mode"] = MODE_TALENT  # Streamlit >= 1.27
+                st.query_params["mode"] = "talent"  # Streamlit >= 1.27
             except Exception:
                 try:
-                    st.experimental_set_query_params(mode=MODE_TALENT)  # older Streamlit
+                    st.experimental_set_query_params(mode="talent")  # older Streamlit
                 except Exception:
                     pass
             st.rerun()
@@ -2845,7 +2862,7 @@ def render_login(mode: str) -> None:
         # --------------------------
         with tabs[0]:
             email = st.text_input("Email", key=f"login_email_{mode}", placeholder="you@example.com")
-            password = st.text_input("Password", key=f"login_pass_{mode}", type="password", placeholder="••••••••")
+            password = st.text_input("Password", key=f"login_pass_{mode}", type="password", placeholder="Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢")
 
             st.markdown('<div class="pl-primary">', unsafe_allow_html=True)
             if st.button("Sign in", use_container_width=True, key=f"btn_login_{mode}"):
@@ -2993,37 +3010,79 @@ def _read_query_param(name: str) -> str | None:
 
 
 def main() -> None:
-    st.set_page_config(page_title="Pathlight", page_icon="✨", layout="wide", initial_sidebar_state="collapsed")
+    st.set_page_config(
+        page_title="Pathlight",
+        page_icon="Ã¢Å“Â¨",
+        layout="wide",
+        initial_sidebar_state="collapsed",
+    )
     inject_css()
 
-    # ---- session state defaults (do not overwrite an existing selection)
+    # ---- session state defaults (do not overwrite existing values)
     if "mode" not in st.session_state:
         st.session_state["mode"] = ""
     if "page" not in st.session_state:
         st.session_state["page"] = ""
 
-    # ---- Deep-link support (Wix): ?mode=explorer or ?mode=talent
-    mode_param = _read_query_param("mode")
-    if isinstance(mode_param, str):
-        mp = mode_param.strip().lower()
-        if mp in (MODE_EXPLORER, MODE_TALENT):
-            st.session_state["mode"] = mp
-        elif mp in ("studio", "talentstudio", "talent_studio"):
-            st.session_state["mode"] = MODE_TALENT
+    # ---- Deep-link support (Wix): ?mode=explorer | ?mode=talent
+    mode_param = (
+        _read_query_param("mode")
+        or _read_query_param("m")
+        or ""
+    ).strip().lower()
+    mode_token = re.sub(r"[^a-z]", "", mode_param or "")
 
-    mode = st.session_state.get("mode", "")
+    # ---- Fallback: if Wix strips query params, infer mode from URL path (/explorer or /talent)
+    try:
+        hdrs = st.context.headers  # Streamlit >= 1.27-ish
+        bits = [
+            hdrs.get("X-Original-URI") or "",
+            hdrs.get("X-Forwarded-Uri") or "",
+            hdrs.get("X-Forwarded-URI") or "",
+            hdrs.get("Referer") or "",
+            hdrs.get("Origin") or "",
 
-    # If no mode is selected yet, show chooser (landing)
+        ]
+        path = (" ".join(bits)).lower()
+
+        if not mode_token:
+            if "/explorer" in path or "/consumer" in path:
+                mode_token = "explorer"
+            elif "/talent" in path or "/enterprise" in path or "/studio" in path:
+                mode_token = "talent"
+    except Exception:
+        pass
+
+# DEBUG DISABLED:     st.write("DEBUG normalized mode_param =", mode_param)
+
+    if mode_token in ("explorer", "consumer"):
+        st.session_state["mode"] = MODE_EXPLORER
+    elif mode_token in ("talent", "talentstudio", "talent_studio", "enterprise", "studio"):
+        st.session_state["mode"] = MODE_TALENT
+
+# DEBUG DISABLED:     st.write("DEBUG normalized mode =", st.session_state.get("mode"))
+# DEBUG DISABLED:     st.write("DEBUG session mode =", st.session_state.get("mode"))
+# DEBUG DISABLED:     st.write("DEBUG before computing final mode =", st.session_state.get("mode"))
+
+    mode = st.session_state.get("mode") or (
+        MODE_EXPLORER
+        if mode_token in ("explorer", "consumer")
+        else MODE_TALENT
+        if mode_token in ("talent", "talentstudio", "enterprise", "studio")
+        else ""
+    )
+
+    # ---- No mode yet Ã¢â€ â€™ landing chooser
     if not mode:
         render_main_two_buttons()
         return
 
-    # Require authentication for the selected mode
+    # ---- Auth gate
     if not ensure_authed_for_mode(mode):
         render_login(mode)
         return
 
-    # Authed: enter the correct shell (do NOT bypass sign-in)
+    # ---- Enter app shell
     if mode == MODE_EXPLORER:
         render_explorer_shell()
     else:
