@@ -41,6 +41,20 @@ try:
 except Exception:
     PdfReader = None
 
+# ================================
+# URL deep-link support (?mode=explorer | ?mode=talent)
+# ================================
+def _get_url_mode() -> str:
+    try:
+        v = st.query_params.get("mode", "")
+        if isinstance(v, list):
+            v = v[0] if v else ""
+        return str(v).strip().lower()
+    except Exception:
+        qp = st.experimental_get_query_params()
+        v = qp.get("mode", [""])[0]
+        return str(v).strip().lower()
+
 
 # =============================================================================
 # Pathlight – Streamlit Demo (Premium, Indeed-like, Hard-Separated) [patch11]
@@ -3008,6 +3022,11 @@ def main() -> None:
 
     # 2) Default to chooser if nothing has been selected yet
     mode = st.session_state.get("mode") or MODE_CHOOSER
+
+    st.write("DEBUG mode_param =", mode_param)
+    st.write("DEBUG session mode =", st.session_state.get("mode"))
+    st.write("DEBUG final mode =", mode)
+
 
     if mode == MODE_EXPLORER:
         render_explorer_shell()
