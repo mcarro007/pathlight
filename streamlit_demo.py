@@ -16,9 +16,12 @@ import streamlit as st
 
 # DEBUG DISABLED: st.write("DEBUG: raw query_params =", dict(st.query_params))
 try:
-# DEBUG DISABLED:     st.write("DEBUG: mode =", st.query_params.get("mode"))
-except Exception as e:
-# DEBUG DISABLED:     st.write("DEBUG: query param read error:", e)
+    pass
+except Exception:
+    pass
+
+# DEBUG DISABLED: st.write("DEBUG: mode =", st.query_params.get("mode"))
+# DEBUG DISABLED: st.write("DEBUG: query param read error:", e)
 
 import pandas as pd
 import numpy as np
@@ -76,12 +79,12 @@ import streamlit as st  # only if not already imported above
 
 try:
     r = requests.get(f"{API_BASE}/system/build", timeout=10)
-# DEBUG DISABLED:     st.write("DEBUG /system/build status =", r.status_code)
-# DEBUG DISABLED:     st.write("DEBUG /system/build json =", r.json())
+    # DEBUG DISABLED: st.write("DEBUG /system/build status =", r.status_code)
+    # DEBUG DISABLED: st.write("DEBUG /system/build json =", r.json())
 except Exception as e:
-# DEBUG DISABLED:     st.write("DEBUG /system/build ERROR =", repr(e))
+    pass
+    # DEBUG DISABLED: st.write("DEBUG /system/build ERROR =", repr(e))
 # --------------------------------------------------
-
 
 PARQUETS: Dict[str, str] = {
     "merged_model_ready_sample_100k": str(ROOT_DIR / "merged_model_ready_sample_100k.parquet"),
