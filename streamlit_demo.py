@@ -3020,12 +3020,17 @@ def main() -> None:
         elif mode_param in ("studio", "talentstudio", "talent_studio"):
             st.session_state["mode"] = MODE_TALENT
 
-    # 2) Default to chooser if nothing has been selected yet
-    mode = st.session_state.get("mode") or MODE_CHOOSER
+    # 2) URL param wins on every run (so Wix deep-links always work)
+    mode = (
+        mode_param
+        if isinstance(mode_param, str) and mode_param in (MODE_EXPLORER, MODE_TALENT)
+        else st.session_state.get("mode")
+    ) or MODE_CHOOSER
 
     st.write("DEBUG mode_param =", mode_param)
     st.write("DEBUG session mode =", st.session_state.get("mode"))
     st.write("DEBUG final mode =", mode)
+
 
 
     if mode == MODE_EXPLORER:
