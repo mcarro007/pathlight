@@ -1,5 +1,7 @@
 ﻿from fastapi import FastAPI, HTTPException, status, Header
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional
 
 from app.db import init_db
 from app.api.consumer_persist import router as consumer_persist_router
@@ -75,6 +77,86 @@ def profile_get(authorization: str | None = Header(default=None)):
         "user_id": uid,
         "profile": {},
     }
+
+# -------------------------------------------------------------------
+# Missing endpoints for Streamlit wiring
+# -------------------------------------------------------------------
+
+class IndustrySuggestRequest(BaseModel):
+    query: str = Field(..., description="Free-text query for industry suggestions")
+
+class IndustrySuggestResponse(BaseModel):
+    ok: bool = True
+    suggestions: List[str] = []
+
+class JDPulseRequest(BaseModel):
+    jd_text: str = Field(..., description="Job description text to analyze")
+    title: Optional[str] = None
+    company: Optional[str] = None
+
+class JDPulseResponse(BaseModel):
+    ok: bool = True
+    pulse: Dict[str, Any] = {}
+
+class CompBuilderRequest(BaseModel):
+    title: str
+    location: Optional[str] = None
+    level: Optional[str] = None
+    budget_min: Optional[int] = None
+    budget_max: Optional[int] = None
+
+class CompBuilderResponse(BaseModel):
+    ok: bool = True
+    comp: Dict[str, Any] = {}
+
+
+@app.post("/consumer/industry-suggest", response_model=IndustrySuggestResponse)
+def consumer_industry_suggest(req: IndustrySuggestRequest):
+    q = (req.query or "").strip().lower()
+    if not q:
+        return {"ok": True, "suggestions": []}
+
+    seeds = [
+        "Healthcare",
+        "Fintech",
+        "GovTech",
+        "EdTech",
+        "Cybersecurity",
+        "AI/ML",
+        "Biotech",
+        "Retail",
+        "Climate Tech",
+        "Manufacturing",
+    ]
+    suggestions = [s for s in seeds if q in s.lower()] or seeds[:6]
+    return {"ok": True, "suggestions": suggestions}
+
+
+@app.post("/consumer/jd-pulse", response_model=JDPulseResponse)
+def consumer_jd_pulse(req: JDPulseRequest):
+    text = (req.jd_text or "").strip()
+    if not text:
+        return {"ok": True, "pulse": {"error": "empty jd_text"}}
+
+    pulse = {
+        "word_count": len(text.split()),
+        "has_salary": ("$" in text) or ("salary" in text.lower()) or ("compensation" in text.lower()),
+        "notes": "Placeholder JD Pulse endpoint is live. Replace with AI scoring later.",
+    }
+    return {"ok": True, "pulse": pulse}
+
+
+@app.post("/enterprise/comp-builder", response_model=CompBuilderResponse)
+def enterprise_comp_builder(req: CompBuilderRequest):
+    comp = {
+        "title": req.title,
+        "location": req.location,
+        "level": req.level,
+        "budget_min": req.budget_min,
+        "budget_max": req.budget_max,
+        "notes": "Placeholder Comp Builder endpoint is live. Replace with market data + AI later.",
+    }
+    return {"ok": True, "comp": comp}
 
 # -------------------------------------------------------------------
 # Routers
