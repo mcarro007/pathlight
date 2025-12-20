@@ -92,6 +92,10 @@ class ApiResponse:
         self.status = status
         self.text = text
 
+        # Legacy compatibility: older tab code expects these
+        self.status_code = status if status is not None else 0
+        self.error = text or ""
+
 
 def api_get(path: str, timeout: int = 30) -> ApiResponse:
     r = requests.get(api_url(path), headers=api_headers(), timeout=timeout)
@@ -1282,7 +1286,6 @@ def render_match_explore_page() -> None:
         payload = {
             "query": q_effective,
             "location": loc_effective,
-            "profile": ctx,
             "limit": 40,
         }
 
@@ -2172,7 +2175,7 @@ def render_live_hunt_page() -> None:
 
         path = m.get("consumer_live_hunt", "")
         if path:
-            res = api_post(path, {"q": q_effective, "location": loc_effective, "profile": profile_for_search}, timeout=60)
+            res = api_post(path, {"query": q_effective, "location": loc_effective, "profile": profile_for_search}, timeout=60)
             if res.ok:
                 results = res.data.get("results") or []
                 _lh_set_debug("backend", q_effective, loc_effective)
